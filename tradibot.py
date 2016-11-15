@@ -7,24 +7,12 @@ Oulu, Finland. <arttuhut@gmail.com>
 """
 
 from errbot import BotPlugin, botcmd
-import random, pickle, gzip
-
-'''
-class PluginExample(BotPlugin):
-    def callback_message(self, mess):
-        if mess.body.find('cookie') != -1:
-            self.send(
-                mess.frm,
-                "What what somebody said cookie!?",
-            )
-'''         
+import random, json
+       
 #vocabulary words are of class vocWord
 class vocWord:
     """Stores a word and relations it has to other words."""
-
-    #maxLinks = 8    
-    #print (vocWord.maxLinks)    
-    
+      
     def __init__(self, newWord):
         self.word = newWord
         self.occurrence = 1
@@ -67,18 +55,6 @@ class vocWord:
             keys.append(item[0])
             a= a + item[1]
             values.append(a)
-
-#            #print(keys, values)
-#            rnd = random.randint(0,values[-1])
-#                    #print (numba)
-#            if rnd < values[0]:
-#                sentence = sentence + keys[0] + ' '
-#            elif rnd < values[1]:
-#                sentence = sentence + keys[1] + ' '
-#            elif rnd < values[2]:
-#                sentence = sentence + keys[2] + ' '
-#            else:
-#                sentence = sentence + keys[8] + ' '
                 
         rnd = random.randint(0,values[-1])
         b = 0        
@@ -88,6 +64,10 @@ class vocWord:
             b += 1
         else:
             return keys[-1]
+            
+    def dataToList(self):
+        output = [self.word, self.occurrence, self.links]
+        return output
 
 
 class Tradibot(BotPlugin):
@@ -111,6 +91,21 @@ class Tradibot(BotPlugin):
 #        self['recent'] = ['']*8 #set by using: self['recent'][0]
 #        
 #        self['urge'] = 0  # the urge to talk 0-255
+
+#    def __init__(self):
+#        self.vocabularyfile = 'vocabulary.dat.gz'
+#
+#        self.activity = 1    #0-255
+#        self.muted = True     
+#        self.enabled = False 
+#        self.recent = ['']*8 #set by using: self['recent'][0]
+#        
+#        #self.chatroom = self.build_identifier('???')
+#        self.chatroom = self.query_room("#general") #*******SET #channel 
+#        self.urge = 0  # the urge to talk 0-255
+#        self['vocabulary'] = [vocWord('init')]
+
+
 #Safer to make these non-persistent!   
    
     #Here are commands for adminstering the bot   
@@ -137,7 +132,7 @@ class Tradibot(BotPlugin):
         elif args == 'status':
             statusList = ['activity: ', str(self.activity), ' muted: ', 
                       str(self.muted), ' enabled: ', str(self.enabled), 'urge: ',
-                        str(self.urge)]
+                        str(self.urge), 'dictionary size: ', str(len(self['vocabulary']))]
             statusList.extend(self.recent)
             state = ' '.join(statusList)
             return state
@@ -150,8 +145,11 @@ class Tradibot(BotPlugin):
             
         elif args == 'save':
             """Saves the vocabulary to a file."""
-            with gzip.open(self.vocabularyfile, 'wb') as f:
-                f.write(pickle.dumps(self['vocabulary']))
+            data = []
+            for item in self['vocabulary']:
+                data.append(item.dataToList())
+            with open(self.vocabularyfile, 'w') as outfile:
+                json.dump(data, outfile) 
             return 'Vocabulary saved'
         
         elif args.split()[0] =='activity':
@@ -164,7 +162,7 @@ class Tradibot(BotPlugin):
         elif args == 'initialize':
             """Initializes bot variables""" 
             #if the __init__ does not work, comment out and use this manually.
-            self.vocabularyfile = 'vocabulary.dat.gz'
+            self.vocabularyfile = 'vocabulary.txt'
     
             self.activity = 1    #0-255
             self.muted = True     
@@ -176,8 +174,7 @@ class Tradibot(BotPlugin):
             self.urge = 0  # the urge to talk 0-255
             self['vocabulary'] = [vocWord('init')]
             return 'Initialized'
-
-    
+   
     #Actual logic starts here    
     
     def sanitize(self, word):
@@ -205,7 +202,6 @@ class Tradibot(BotPlugin):
         #if wants to speak
         sentence = ''
         vocab = self['vocabulary']
-        #topic = self.recent[random.randint(0,8)]
         topic = random.choice(self.recent)
         rnd = random.randint(0,255)
         while self.urge > rnd:
@@ -226,14 +222,6 @@ class Tradibot(BotPlugin):
 
  
     def vocUpdate(self, word):
-        #load voc file
-        #add to voc list
-        #save voc file
-    
-        #load vocabulary file
-        #with gzip.open(self.vocabularyfile, 'rb') as f:
-        #    vocab = pickle.loads(f.read())
-
         vocab = self['vocabulary']
         #vocabulary is vocab[vocWord(word1),vocWord(word2)]
         for index, item in enumerate(vocab):
@@ -275,13 +263,8 @@ class Tradibot(BotPlugin):
         for i in range(0,7):
             vocab[random.randint(0, len(vocab)-1)].decLinks
 
-
-        #save vocabulary file
-        #with gzip.open(self.vocabularyfile, 'wb') as f:
-        #    f.write(pickle.dumps(vocab))
         self['vocabulary'] = vocab
-
-    
+ 
     def callback_message(self, mess):
         if self.enabled:
             # sanitize word by word, add to vocabulary, add to recent, speak
