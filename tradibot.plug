@@ -1,0 +1,13 @@
+[Core]
+name = Tradibot
+module = tradibot
+
+[Documentation]
+description = Tragic discussion bot. Errbot plugin for generating random chatter. Tragic refers to the development process.
+
+[Python]
+version = 3
+
+[Errbot]
+min = 4.1.3
+
