@@ -4,6 +4,7 @@ Created on Sat Nov 12 11:50:59 2016
 
 Author: Arttu Huttunen, 2016
 Oulu, Finland. <arttuhut@gmail.com>
+Version 0.2
 """
 
 from errbot import BotPlugin, botcmd
@@ -76,37 +77,24 @@ class Tradibot(BotPlugin):
     the words, then semi-randomly talks back."""
     #Tragic discussion bot
 
-#    def __init__(self, dummy=None):
-#        self.vocabularyfile = 'vocabulary.dat.gz'
-#        
-#        #self.activity = 0
-#        #self.muted = True
-#        #self.enabled = False
-#        #self.recent = []
+#Safer to make these non-persistent!   
 #
-#        #OR ?!?!?!?!
-#        self['activity'] = 0    #0-255
-#        self['muted'] = True     
-#        self['enabled'] = False 
-#        self['recent'] = ['']*8 #set by using: self['recent'][0]
-#        
-#        self['urge'] = 0  # the urge to talk 0-255
-
-#    def __init__(self):
-#        self.vocabularyfile = 'vocabulary.dat.gz'
+#    def activate(self):
+#        """Initializes bot variables""" 
+#        #if the __init__/activate does not work, comment out and initialize manually.
+#        self.vocabularyfile = 'vocabulary.txt'
 #
 #        self.activity = 1    #0-255
 #        self.muted = True     
 #        self.enabled = False 
 #        self.recent = ['']*8 #set by using: self['recent'][0]
 #        
-#        #self.chatroom = self.build_identifier('???')
-#        self.chatroom = self.query_room("#general") #*******SET #channel 
+#        self.chatroom = self.build_identifier('#general')
+#        #self.chatroom = self.query_room("#general")     #*******SET #channel
 #        self.urge = 0  # the urge to talk 0-255
 #        self['vocabulary'] = [vocWord('init')]
+#        super().activate()
 
-
-#Safer to make these non-persistent!   
    
     #Here are commands for adminstering the bot   
     @botcmd
@@ -161,7 +149,7 @@ class Tradibot(BotPlugin):
         
         elif args == 'initialize':
             """Initializes bot variables""" 
-            #if the __init__ does not work, comment out and use this manually.
+            #if the __init__/activate does not work, comment out and use this manually.
             self.vocabularyfile = 'vocabulary.txt'
     
             self.activity = 1    #0-255
@@ -279,5 +267,3 @@ class Tradibot(BotPlugin):
                         self.urge = 255
             if not self.muted:
                 self.speak()
-        
-            
