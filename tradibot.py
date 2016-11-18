@@ -3,7 +3,7 @@
 Created on Sat Nov 12 11:50:59 2016
 
 Author: Arttu Huttunen, 2016
-Oulu, Finland. <arttuhut@gmail.com>
+Oulu, Finland.
 Version 0.3
 """
 
