@@ -4,12 +4,11 @@ Created on Sat Nov 12 11:50:59 2016
 
 Author: Arttu Huttunen, 2016
 Oulu, Finland. <arttuhut@gmail.com>
-Version 0.3
+Version 0.2
 """
 
 from errbot import BotPlugin, botcmd
 import random, json
-import tradibot_conf
        
 #vocabulary words are of class vocWord
 class vocWord:
@@ -146,12 +145,12 @@ class Tradibot(BotPlugin):
             self.activity = int(args.split()[1])
             if self.activity >255:
                 self.activity = 255
-            return 'Activity set to ' + str(self.activity)
+            return 'Activity set to ' + self.activity
         
         elif args == 'initialize':
             """Initializes bot variables""" 
             #if the __init__/activate does not work, comment out and use this manually.
-            self.vocabularyfile = tradibot_conf.vocabularyfile
+            self.vocabularyfile = 'vocabulary.txt'
     
             self.activity = 1    #0-255
             self.muted = True     
@@ -159,14 +158,10 @@ class Tradibot(BotPlugin):
             self.recent = ['']*8 #set by using: self['recent'][0]
             
             #self.chatroom = self.build_identifier('???')
-            self.chatroom = self.query_room(tradibot_conf.chatroom)
+            self.chatroom = self.query_room("#general")
             self.urge = 0  # the urge to talk 0-255
-            return 'Initialized'
-            
-        elif args == 'new_vocabulary':
             self['vocabulary'] = [vocWord('init')]
-            return 'New vocabulary initialized'
-            
+            return 'Initialized'
    
     #Actual logic starts here    
     
@@ -217,7 +212,6 @@ class Tradibot(BotPlugin):
     def vocUpdate(self, word):
         vocab = self['vocabulary']
         #vocabulary is vocab[vocWord(word1),vocWord(word2)]
-        #if old word
         for index, item in enumerate(vocab):
             if word == item.word:
                 item.incOcc()
@@ -227,52 +221,49 @@ class Tradibot(BotPlugin):
                     if vocab[pos].occurrence > vocab[pos-1].occurrence:
                         vocab[pos],vocab[pos-1] = vocab[pos-1], vocab[pos]
                     pos = pos - 1                                    
-                #link current to recent, i.e. word in voc gets a link to recent
-                for rec in self.recent:
-                    item.linkWords(rec)
-                    #link recent to current, i.e. recent linked to word at hand
-                    #find recent and link
-                    for rcnt in vocab:
-                        if rcnt.word == rec:
-                            rcnt.linkWords(word)
-                            break
+                #links ...
+                item.linkWords(self.recent[-1])
+                item.linkWords(self.recent[-2])
+                item.linkWords(self.recent[-3])
+                item.linkWords(self.recent[-4])
+                item.linkWords(self.recent[-5])
+                item.linkWords(self.recent[-6])
+                item.linkWords(self.recent[-7])
+                item.linkWords(self.recent[-8])            
                 break
-        #if new word, insert near end
         else:
             if len(vocab) >= 8192:
-                vocab.pop()
-            vocab.insert(8000,vocWord(word))
+                vocab.pop(8001)
+            vocab.append(vocWord(word))
             #links ...
-            for rec in self.recent:
-                vocab[8000].linkWords(rec)
-                for rcnt in vocab:
-                    if rcnt.word == rec:
-                        rcnt.linkWords(word)
-                        break  
+            vocab[-1].linkWords(self.recent[-1])
+            vocab[-1].linkWords(self.recent[-2])
+            vocab[-1].linkWords(self.recent[-3])
+            vocab[-1].linkWords(self.recent[-4])
+            vocab[-1].linkWords(self.recent[-5])
+            vocab[-1].linkWords(self.recent[-6])
+            vocab[-1].linkWords(self.recent[-7])
+            vocab[-1].linkWords(self.recent[-8])    
 
-        #if vocabulary size is over something, keep balance
-        if vocab[0].occurrence > 100:
-            #Randomly reduce some occurrence and links to keep balance
-            random.choice(vocab).decOcc()
-            #should sort also here... skip that
-            for i in range(0,7):
-                random.choice(vocab).decLinks()
+        #Randomly reduce some occurrence and links to keep balance
+        vocab[random.randint(0, len(vocab)-1)].decOcc()
+        #should sort also here... skip that
+        for i in range(0,7):
+            vocab[random.randint(0, len(vocab)-1)].decLinks
 
         self['vocabulary'] = vocab
  
     def callback_message(self, mess):
         if self.enabled:
-            #skip commands completely
-            if mess.body[0] != '!': # or mess.body[:5] != 'botname':
-                # sanitize word by word, add to vocabulary, add to recent, speak
-                incoming_words = mess.body.split()
-                for item in incoming_words:
-                    if self.sanitize(item):
-                        self.vocUpdate(item)
-                        del self.recent[0]
-                        self.recent.append(item)
-                        self.urge += self.activity
-                        if self.urge > 255:
-                            self.urge = 255
-                if not self.muted:
-                    self.speak()
+            # sanitize word by word, add to vocabulary, add to recent, speak
+            incoming_words = mess.body.split()
+            for item in incoming_words:
+                if self.sanitize(item):
+                    self.vocUpdate(item)
+                    del self.recent[0]
+                    self.recent.append(item)
+                    self.urge += self.activity
+                    if self.urge > 255:
+                        self.urge = 255
+            if not self.muted:
+                self.speak()
