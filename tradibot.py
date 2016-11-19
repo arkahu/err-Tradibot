@@ -167,6 +167,31 @@ class Tradibot(BotPlugin):
             self['vocabulary'] = [vocWord('init')]
             return 'New vocabulary initialized'
             
+        elif args == 'load_vocabulary':
+            with open(tradibot_conf.vocabularyfile, 'r') as file:
+                data=json.load(file)
+            vocab =  self['vocabulary']
+            #add new words from file to vocabulary
+            for word in data:
+                for curvoc in vocab:
+                    if word[0] == curvoc.word:
+                        break
+                else:
+                    if len(vocab) >= 8192:
+                        vocab.pop()
+                        vocab.insert(8000,vocWord(word))
+                        vocab[8000].occurrence = word[1]
+                        vocab[8000].links = word[2]
+                        
+                    else:
+                        vocab.append(vocWord(word))
+                        vocab[-1].occurrence = word[1]
+                        vocab[-1].links = word[2] 
+                        
+            self['vocabulary'] = vocab
+                    
+            return 'Loaded vocabulary file'
+            
    
     #Actual logic starts here    
     
@@ -241,7 +266,9 @@ class Tradibot(BotPlugin):
         else:
             if len(vocab) >= 8192:
                 vocab.pop()
-            vocab.insert(8000,vocWord(word))
+                vocab.insert(8000,vocWord(word))
+            else:
+                vocab.append(vocWord(word))
             #links ...
             for rec in self.recent:
                 vocab[8000].linkWords(rec)
