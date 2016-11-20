@@ -4,7 +4,7 @@ Created on Sat Nov 12 11:50:59 2016
 
 Author: Arttu Huttunen, 2016
 Oulu, Finland.
-Version 0.3
+Version 0.5
 """
 
 from errbot import BotPlugin, botcmd
@@ -181,12 +181,18 @@ class Tradibot(BotPlugin):
                         vocab.pop()
                         vocab.insert(8000,vocWord(word))
                         vocab[8000].occurrence = word[1]
-                        vocab[8000].links = word[2]
-                        
+                        vocab[8000].links = word[2]                        
                     else:
                         vocab.append(vocWord(word))
                         vocab[-1].occurrence = word[1]
-                        vocab[-1].links = word[2] 
+                        vocab[-1].links = word[2]
+                        
+            #sort by occurrence
+            pos = len(vocab) - 1
+            while pos > 0:
+                if vocab[pos].occurrence > vocab[pos-1].occurrence:
+                    vocab[pos],vocab[pos-1] = vocab[pos-1], vocab[pos]
+                pos = pos - 1 
                         
             self['vocabulary'] = vocab
                     
@@ -247,11 +253,11 @@ class Tradibot(BotPlugin):
             if word == item.word:
                 item.incOcc()
                 #sort by order of occurrence
-                pos = index                
-                while pos > 0:
-                    if vocab[pos].occurrence > vocab[pos-1].occurrence:
-                        vocab[pos],vocab[pos-1] = vocab[pos-1], vocab[pos]
-                    pos = pos - 1                                    
+#                pos = index                
+#                while pos > 0:
+#                    if vocab[pos].occurrence > vocab[pos-1].occurrence:
+#                        vocab[pos],vocab[pos-1] = vocab[pos-1], vocab[pos]
+#                    pos = pos - 1                                    
                 #link current to recent, i.e. word in voc gets a link to recent
                 for rec in self.recent:
                     item.linkWords(rec)
@@ -265,13 +271,15 @@ class Tradibot(BotPlugin):
         #if new word, insert near end
         else:
             if len(vocab) >= 8192:
+                point = 8000
                 vocab.pop()
-                vocab.insert(8000,vocWord(word))
+                vocab.insert(point,vocWord(word))
             else:
                 vocab.append(vocWord(word))
+                point = len(vocab) -1
             #links ...
             for rec in self.recent:
-                vocab[8000].linkWords(rec)
+                vocab[point].linkWords(rec)
                 for rcnt in vocab:
                     if rcnt.word == rec:
                         rcnt.linkWords(word)
@@ -284,6 +292,14 @@ class Tradibot(BotPlugin):
             #should sort also here... skip that
             for i in range(0,7):
                 random.choice(vocab).decLinks()
+
+
+        #sort by order of occurrence
+        pos = len(vocab) - 1                
+        while pos > 0:
+            if vocab[pos].occurrence > vocab[pos-1].occurrence:
+                vocab[pos],vocab[pos-1] = vocab[pos-1], vocab[pos]
+            pos = pos - 1 
 
         self['vocabulary'] = vocab
  
