@@ -4,7 +4,7 @@ Created on Sat Nov 12 11:50:59 2016
 
 Author: Arttu Huttunen, 2016
 Oulu, Finland.
-Version 0.5
+Version 0.51
 """
 
 from errbot import BotPlugin, botcmd
@@ -137,7 +137,7 @@ class Tradibot(BotPlugin):
             data = []
             for item in self['vocabulary']:
                 data.append(item.dataToList())
-            with open(self.vocabularyfile, 'w') as outfile:
+            with open(tradibot_conf.vocabularyfile, 'w') as outfile:
                 json.dump(data, outfile) 
             return 'Vocabulary saved'
         
@@ -214,17 +214,14 @@ class Tradibot(BotPlugin):
         elif word[:6] == 'https:':
             good = False         
         elif word[:4] == 'ftp:':
-            good = False  
-        elif word[:4] == 'ftp:':
-            good = False         
+            good = False          
         
         else:
             good = True        
         return good
     
-    def speak(self):
+    def speak(self, sentence = ''):
         #if wants to speak
-        sentence = ''
         vocab = self['vocabulary']
         topic = random.choice(self.recent)
         rnd = random.randint(0,255)
@@ -294,28 +291,42 @@ class Tradibot(BotPlugin):
                 random.choice(vocab).decLinks()
 
 
-        #sort by order of occurrence
-        pos = len(vocab) - 1                
-        while pos > 0:
-            if vocab[pos].occurrence > vocab[pos-1].occurrence:
-                vocab[pos],vocab[pos-1] = vocab[pos-1], vocab[pos]
-            pos = pos - 1 
+#        #sort by order of occurrence
+#        pos = len(vocab) - 1                
+#        while pos > 0:
+#            if vocab[pos].occurrence > vocab[pos-1].occurrence:
+#                vocab[pos],vocab[pos-1] = vocab[pos-1], vocab[pos]
+#            pos = pos - 1 
 
         self['vocabulary'] = vocab
  
     def callback_message(self, mess):
         if self.enabled:
-            #skip commands completely
-            if mess.body[0] != '!': # or mess.body[:5] != 'botname':
-                # sanitize word by word, add to vocabulary, add to recent, speak
-                incoming_words = mess.body.split()
-                for item in incoming_words:
-                    if self.sanitize(item):
-                        self.vocUpdate(item)
-                        del self.recent[0]
-                        self.recent.append(item)
-                        self.urge += self.activity
-                        if self.urge > 255:
-                            self.urge = 255
-                if not self.muted:
-                    self.speak()
+            #skip commands completely and too long messages
+            if mess.body[0] != '!': # and mess.body[:5] != 'botname':
+                if len(mess.body) <  1000:
+                    # sanitize word by word, add to vocabulary, add to recent, speak
+                    incoming_words = mess.body.split()
+                    for item in incoming_words:
+                        if self.sanitize(item):
+                            self.vocUpdate(item)
+                            del self.recent[0]
+                            self.recent.append(item)
+                            self.urge += self.activity
+                            if self.urge > 255:
+                                self.urge = 255
+
+                    #sort by order of occurrence
+                    vocab = self['vocabulary']
+                    pos = len(vocab) - 1                
+                    while pos > 0:
+                        if vocab[pos].occurrence > vocab[pos-1].occurrence:
+                            vocab[pos],vocab[pos-1] = vocab[pos-1], vocab[pos]
+                        pos = pos - 1
+                    self['vocabulary'] = vocab                              
+
+                    if not self.muted:
+                        self.speak()
+                else:
+                    if not self.muted:
+                        self.speak('tl;dr ')                  
