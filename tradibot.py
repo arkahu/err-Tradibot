@@ -4,7 +4,7 @@ Created on Sat Nov 12 11:50:59 2016
 
 Author: Arttu Huttunen, 2016
 Oulu, Finland.
-Version 0.51
+Version 0.6
 """
 
 from errbot import BotPlugin, botcmd
@@ -29,7 +29,8 @@ class vocWord:
     def decOcc(self):
          if self.occurrence > 0:
              self.occurrence = self.occurrence - 1
-                   
+
+    #links this word to another word                   
     def linkWords(self, word, amount=1):
         if word != self.word:
             #if word is in links dictionary increase link strength
@@ -48,7 +49,8 @@ class vocWord:
         key = random.choice(list(self.links.keys()))
         if self.links[key] > 0:  
             self.links[key] = self.links[key] - 1
-            
+    
+    #gives randomly a link, weighted by the link strengths        
     def giveLink(self):
         keys = []
         values = []
@@ -66,7 +68,8 @@ class vocWord:
             b += 1
         else:
             return keys[-1]
-            
+    
+    #makes a list of the data for -save to file- purpose       
     def dataToList(self):
         output = [self.word, self.occurrence, self.links]
         return output
@@ -130,7 +133,7 @@ class Tradibot(BotPlugin):
             """Bot talks now."""
             self.urge = 255
             self.speak()
-            return 'I speak.'
+            return 'I have spoken.'
             
         elif args == 'save':
             """Saves the vocabulary to a file."""
@@ -200,25 +203,26 @@ class Tradibot(BotPlugin):
             
    
     #Actual logic starts here    
-    
-    def sanitize(self, word):
-        #remove commands weblinks...
-        if len(word) > 32:
-            good = False
-        elif word[0] == '!':
-            good = False            
-        elif word[:4] == 'www.':
-            good = False
-        elif word[:5] == 'http:':
-            good = False
-        elif word[:6] == 'https:':
-            good = False         
-        elif word[:4] == 'ftp:':
-            good = False          
-        
-        else:
-            good = True        
-        return good
+ 
+#depreciated 
+#    def sanitize(self, word):
+#        #remove commands weblinks...
+#        if len(word) > 32:
+#            good = False
+#        elif word[0] == '!':
+#            good = False            
+#        elif word[:4] == 'www.':
+#            good = False
+#        elif word[:5] == 'http:':
+#            good = False
+#        elif word[:6] == 'https:':
+#            good = False         
+#        elif word[:4] == 'ftp:':
+#            good = False          
+#        
+#        else:
+#            good = True        
+#        return good
     
     def speak(self, sentence = ''):
         #if wants to speak
@@ -283,7 +287,7 @@ class Tradibot(BotPlugin):
                         break  
 
         #if vocabulary size is over something, keep balance
-        if vocab[0].occurrence > 100:
+        if vocab[0].occurrence > 200:
             #Randomly reduce some occurrence and links to keep balance
             random.choice(vocab).decOcc()
             #should sort also here... skip that
@@ -303,18 +307,22 @@ class Tradibot(BotPlugin):
     def callback_message(self, mess):
         if self.enabled:
             #skip commands completely and too long messages
-            if mess.body[0] != '!': # and mess.body[:5] != 'botname':
+            if not mess.body.startswith(tradibot_conf.ignore):
+            #if mess.body[0] != '!': # and mess.body[:5] != 'botname':
                 if len(mess.body) <  1000:
                     # sanitize word by word, add to vocabulary, add to recent, speak
-                    incoming_words = mess.body.split()
+                    incoming_message = mess.body.lower()
+                    incoming_words = incoming_message.split()
                     for item in incoming_words:
-                        if self.sanitize(item):
-                            self.vocUpdate(item)
-                            del self.recent[0]
-                            self.recent.append(item)
-                            self.urge += self.activity
-                            if self.urge > 255:
-                                self.urge = 255
+                        if len(item) < 32:
+                            if not item.startswith(tradibot_conf.forbidden_words):
+                        #if self.sanitize(item):
+                                self.vocUpdate(item)
+                                del self.recent[0]
+                                self.recent.append(item)
+                                self.urge += self.activity
+                                if self.urge > 255:
+                                    self.urge = 255
 
                     #sort by order of occurrence
                     vocab = self['vocabulary']
@@ -327,6 +335,8 @@ class Tradibot(BotPlugin):
 
                     if not self.muted:
                         self.speak()
+                        
+                #too long message is skipped
                 else:
                     if not self.muted:
                         self.speak('tl;dr ')                  
