@@ -4,7 +4,7 @@ Created on Sat Nov 12 11:50:59 2016
 
 Author: Arttu Huttunen, 2016
 Oulu, Finland.
-Version 0.7
+Version 0.81
 """
 
 from errbot import BotPlugin, botcmd
