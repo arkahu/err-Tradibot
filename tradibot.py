@@ -4,7 +4,7 @@ Created on Sat Nov 12 11:50:59 2016
 
 Author: Arttu Huttunen, 2016
 Oulu, Finland.
-Version 0.61
+Version 0.7
 """
 
 from errbot import BotPlugin, botcmd
@@ -40,7 +40,7 @@ class vocWord:
                     self.links[word] = 255
             #if not in links replace lowest strength link with word
             else:
-                if len(self.links) > 7:
+                if len(self.links) > 15:  #at max 16 links
                     del self.links[min(self.links, key=self.links.get)]
                 self.links[word] = 1
 
@@ -131,7 +131,7 @@ class Tradibot(BotPlugin):
 
         elif args == 'talknow':
             """Bot talks now."""
-            self.urge = 255
+            self.urge = 65535
             self.speak()
             return 'I have spoken.'
             
@@ -145,25 +145,37 @@ class Tradibot(BotPlugin):
             return 'Vocabulary saved'
         
         elif args.split()[0] =='activity':
-            """Sets the value how often the bot speaks. !tradibot activity 50"""
+            """Sets the value how often the bot speaks, max 65535. !tradibot activity 4"""
             self.activity = int(args.split()[1])
-            if self.activity >255:
-                self.activity = 255
+            if self.activity >65535:
+                self.activity = 65535
             return 'Activity set to ' + str(self.activity)
+            
+        elif args.split()[0] =='silence':
+            """Sets the value how fast bot becomes silent. !tradibot silence 40"""
+            self.silence = int(args.split()[1])
+            if self.silence >65535:
+                self.silence = 65535
+            elif self.silence == 0:
+                self.silence = 1 #will not stop talking with 0
+            return 'Silence set to ' + str(self.silence)            
+            
+
         
         elif args == 'initialize':
             """Initializes bot variables""" 
             #if the __init__/activate does not work, comment out and use this manually.
             self.vocabularyfile = tradibot_conf.vocabularyfile
     
-            self.activity = 1    #0-255
+            self.activity = 256    #0-65535
+            self.silence = 2048
             self.muted = True     
             self.enabled = False 
-            self.recent = ['']*8 #set by using: self['recent'][0]
+            self.recent = ['']*16 #set by using: self['recent'][0]
             
-            #self.chatroom = self.build_identifier('???')
-            self.chatroom = self.query_room(tradibot_conf.chatroom)
-            self.urge = 0  # the urge to talk 0-255
+            self.chatroom = self.build_identifier(tradibot_conf.chatroom)
+            #self.chatroom = self.query_room(tradibot_conf.chatroom)
+            self.urge = 0  # the urge to talk 0-65535
             return 'Initialized'
             
         elif args == 'new_vocabulary':
@@ -208,10 +220,10 @@ class Tradibot(BotPlugin):
         #if wants to speak
         vocab = self['vocabulary']
         topic = random.choice(self.recent)
-        rnd = random.randint(0,255)
+        rnd = random.randint(0,65535)
         while self.urge > rnd:
-            self.urge = self.urge - 10
-            if self.urge <0:
+            self.urge = self.urge - self.silence
+            if self.urge < 0:
                 self.urge = 0
             for item in vocab:
                 if item.word == topic:
@@ -223,7 +235,6 @@ class Tradibot(BotPlugin):
         #talk to chat
         if sentence != '':                               
             self.send(self.chatroom, sentence,)
-        #return sentence
 
  
     def vocUpdate(self, word):
@@ -264,7 +275,7 @@ class Tradibot(BotPlugin):
         if vocab[0].occurrence > 200:
             #Randomly reduce some occurrence and links to keep balance
             random.choice(vocab).decOcc()
-            for i in range(0,7):
+            for i in range(0,32):
                 random.choice(vocab).decLinks()
 
 
@@ -288,8 +299,8 @@ class Tradibot(BotPlugin):
                                 del self.recent[0]
                                 self.recent.append(item)
                                 self.urge += self.activity
-                                if self.urge > 255:
-                                    self.urge = 255
+                                if self.urge > 65535:
+                                    self.urge = 65535
 
                     #sort by order of occurrence
                     vocab = self['vocabulary']
