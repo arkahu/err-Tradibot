@@ -4,7 +4,7 @@ Created on Sat Nov 12 11:50:59 2016
 
 Author: Arttu Huttunen, 2016
 Oulu, Finland.
-Version 0.6
+Version 0.61
 """
 
 from errbot import BotPlugin, botcmd
@@ -203,27 +203,7 @@ class Tradibot(BotPlugin):
             
    
     #Actual logic starts here    
- 
-#depreciated 
-#    def sanitize(self, word):
-#        #remove commands weblinks...
-#        if len(word) > 32:
-#            good = False
-#        elif word[0] == '!':
-#            good = False            
-#        elif word[:4] == 'www.':
-#            good = False
-#        elif word[:5] == 'http:':
-#            good = False
-#        elif word[:6] == 'https:':
-#            good = False         
-#        elif word[:4] == 'ftp:':
-#            good = False          
-#        
-#        else:
-#            good = True        
-#        return good
-    
+   
     def speak(self, sentence = ''):
         #if wants to speak
         vocab = self['vocabulary']
@@ -252,13 +232,7 @@ class Tradibot(BotPlugin):
         #if old word
         for index, item in enumerate(vocab):
             if word == item.word:
-                item.incOcc()
-                #sort by order of occurrence
-#                pos = index                
-#                while pos > 0:
-#                    if vocab[pos].occurrence > vocab[pos-1].occurrence:
-#                        vocab[pos],vocab[pos-1] = vocab[pos-1], vocab[pos]
-#                    pos = pos - 1                                    
+                item.incOcc()                                   
                 #link current to recent, i.e. word in voc gets a link to recent
                 for rec in self.recent:
                     item.linkWords(rec)
@@ -290,24 +264,16 @@ class Tradibot(BotPlugin):
         if vocab[0].occurrence > 200:
             #Randomly reduce some occurrence and links to keep balance
             random.choice(vocab).decOcc()
-            #should sort also here... skip that
             for i in range(0,7):
                 random.choice(vocab).decLinks()
 
-
-#        #sort by order of occurrence
-#        pos = len(vocab) - 1                
-#        while pos > 0:
-#            if vocab[pos].occurrence > vocab[pos-1].occurrence:
-#                vocab[pos],vocab[pos-1] = vocab[pos-1], vocab[pos]
-#            pos = pos - 1 
 
         self['vocabulary'] = vocab
  
     def callback_message(self, mess):
         if self.enabled:
             #skip commands completely and too long messages
-            if not mess.body.startswith(tradibot_conf.ignore):
+            if not mess.body.startswith(tradibot_conf.ignore_commands):
             #if mess.body[0] != '!': # and mess.body[:5] != 'botname':
                 if len(mess.body) <  1000:
                     # sanitize word by word, add to vocabulary, add to recent, speak
@@ -316,7 +282,8 @@ class Tradibot(BotPlugin):
                     for item in incoming_words:
                         if len(item) < 32:
                             if not item.startswith(tradibot_conf.forbidden_words):
-                        #if self.sanitize(item):
+                                if item.endswith(tradibot_conf.remove_chars):
+                                    item = item[:-1]
                                 self.vocUpdate(item)
                                 del self.recent[0]
                                 self.recent.append(item)
