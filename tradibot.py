@@ -325,3 +325,4 @@ class Tradibot(BotPlugin):
                     if not self.muted:
                         self.speak('tl;dr ')
                 self['vocabulary'] = self.vocab
+
