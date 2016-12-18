@@ -4,7 +4,7 @@ Created on Sat Nov 12 11:50:59 2016
 
 Author: Arttu Huttunen, 2016
 Oulu, Finland.
-Version 0.81
+Version 0.83
 """
 
 from errbot import BotPlugin, botcmd
@@ -163,14 +163,14 @@ class Tradibot(BotPlugin):
 
         
         elif args == 'initialize':
-            """Initializes bot variables""" 
+            """Initializes bot variables.""" 
             #if the __init__/activate does not work, comment out and use this manually.
             self.vocabularyfile = tradibot_conf.vocabularyfile
     
             self.activity = 256    #0-65535
             self.silence = 2048
             self.muted = True     
-            self.enabled = False 
+            self.enabled = False
             self.recent = ['']*16 #set by using: self['recent'][0]
             
             self.chatroom = self.build_identifier(tradibot_conf.chatroom)
@@ -179,10 +179,12 @@ class Tradibot(BotPlugin):
             return 'Initialized'
             
         elif args == 'new_vocabulary':
+            """Resets the vocabulary."""
             self['vocabulary'] = [vocWord('init')]
             return 'New vocabulary initialized'
             
         elif args == 'load_vocabulary':
+            """Loads words from file to vocabulary."""
             with open(tradibot_conf.vocabularyfile, 'r') as file:
                 data=json.load(file)
             vocab =  self['vocabulary']
@@ -192,7 +194,7 @@ class Tradibot(BotPlugin):
                     if word[0] == curvoc.word:
                         break
                 else:
-                    if len(vocab) >= 8192:
+                    if len(vocab) >= 8191:
                         vocab.pop()
                         vocab.insert(8000,vocWord(word))
                         vocab[8000].occurrence = word[1]
@@ -210,15 +212,19 @@ class Tradibot(BotPlugin):
                 pos = pos - 1 
                         
             self['vocabulary'] = vocab
-                    
             return 'Loaded vocabulary file'
+        
+        else:
+            return '''Valid parameters are: initialize, status, mute, unmute,
+            enable, disable, activity 250, silence 2000, save, new_vocabulary,
+            load_vocabulary'''
             
    
     #Actual logic starts here    
    
     def speak(self, sentence = ''):
         #if wants to speak
-        vocab = self['vocabulary']
+        vocab = self.vocab
         topic = random.choice(self.recent)
         rnd = random.randint(0,65535)
         while self.urge > rnd:
@@ -238,10 +244,10 @@ class Tradibot(BotPlugin):
 
  
     def vocUpdate(self, word):
-        vocab = self['vocabulary']
+        vocab = self.vocab
         #vocabulary is vocab[vocWord(word1),vocWord(word2)]
         #if old word
-        for index, item in enumerate(vocab):
+        for item in vocab:
             if word == item.word:
                 item.incOcc()                                   
                 #link current to recent, i.e. word in voc gets a link to recent
@@ -278,14 +284,14 @@ class Tradibot(BotPlugin):
             for i in range(0,32):
                 random.choice(vocab).decLinks()
 
+        self.vocab = vocab
 
-        self['vocabulary'] = vocab
  
     def callback_message(self, mess):
         if self.enabled:
             #skip commands completely and too long messages
             if not mess.body.startswith(tradibot_conf.ignore_commands):
-            #if mess.body[0] != '!': # and mess.body[:5] != 'botname':
+                self.vocab = self['vocabulary']  #RAM copy of vocab
                 if len(mess.body) <  1000:
                     # sanitize word by word, add to vocabulary, add to recent, speak
                     incoming_message = mess.body.lower()
@@ -303,13 +309,13 @@ class Tradibot(BotPlugin):
                                     self.urge = 65535
 
                     #sort by order of occurrence
-                    vocab = self['vocabulary']
+                    vocab = self.vocab
                     pos = len(vocab) - 1                
                     while pos > 0:
                         if vocab[pos].occurrence > vocab[pos-1].occurrence:
                             vocab[pos],vocab[pos-1] = vocab[pos-1], vocab[pos]
                         pos = pos - 1
-                    self['vocabulary'] = vocab                              
+                    self.vocab = vocab                              
 
                     if not self.muted:
                         self.speak()
@@ -317,4 +323,5 @@ class Tradibot(BotPlugin):
                 #too long message is skipped
                 else:
                     if not self.muted:
-                        self.speak('tl;dr ')                  
+                        self.speak('tl;dr ')
+                self['vocabulary'] = self.vocab
