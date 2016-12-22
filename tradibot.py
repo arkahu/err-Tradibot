@@ -4,7 +4,7 @@ Created on Sat Nov 12 11:50:59 2016
 
 Author: Arttu Huttunen, 2016
 Oulu, Finland.
-Version 0.83
+Version 0.84
 """
 
 from errbot import BotPlugin, botcmd
@@ -122,9 +122,12 @@ class Tradibot(BotPlugin):
             return 'Tradibot disabled'
            
         elif args == 'status':
-            statusList = ['activity: ', str(self.activity), ' muted: ', 
-                      str(self.muted), ' enabled: ', str(self.enabled), 'urge: ',
-                        str(self.urge), 'dictionary size: ', str(len(self['vocabulary']))]
+            statusList = ['activity: ', str(self.activity),
+                        ' silence: ', str(self.silence),
+                        ' muted: ', str(self.muted),
+                        ' enabled: ', str(self.enabled),
+                        ' urge: ', str(self.urge), 
+                        ' dictionary size: ', str(len(self['vocabulary']))]
             statusList.extend(self.recent)
             state = ' '.join(statusList)
             return state
@@ -167,8 +170,8 @@ class Tradibot(BotPlugin):
             #if the __init__/activate does not work, comment out and use this manually.
             self.vocabularyfile = tradibot_conf.vocabularyfile
     
-            self.activity = 256    #0-65535
-            self.silence = 2048
+            self.activity = 200    #0-65535
+            self.silence = 2000
             self.muted = True     
             self.enabled = False
             self.recent = ['']*16 #set by using: self['recent'][0]
@@ -308,7 +311,7 @@ class Tradibot(BotPlugin):
                                 if self.urge > 65535:
                                     self.urge = 65535
 
-                    #sort by order of occurrence
+                    #sort by order of occurrence, at least partially
                     vocab = self.vocab
                     pos = len(vocab) - 1                
                     while pos > 0:
